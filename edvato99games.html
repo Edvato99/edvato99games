@@ -3,9 +3,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Button Example</title>
+    <title>Point Counter</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .menu {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 200px;
+            height: 100%;
+            background-color: #333;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .menu h3 {
+            margin-top: 0;
+        }
+        .menu button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+        .menu button:hover {
+            background-color: #0056b3;
+        }
+        .menu button::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 110%;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #222;
+            color: white;
+            padding: 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            white-space: nowrap;
+            display: none;
+        }
+        .menu button:hover::after {
+            display: block;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            position: relative;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:active {
+            animation: clickEffect 0.2s;
+        }
+        @keyframes clickEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        .counter {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        .click-feedback {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: black;
+            opacity: 1;
+            animation: fadeOut 1s forwards;
+            pointer-events: none;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        .message {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: red;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            opacity: 0;
+            animation: showMessage 2s forwards;
+        }
+        @keyframes showMessage {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
-    <button onclick="alert('Button clicked!')">Click Me</button>
+    <div class="menu">
+        <h3>Upgrades</h3>
+        <button id="upgradeButton" data-tooltip="Increases points per click by 1">Upgrade Button (Cost: 50 points)</button>
+        <button id="autoClickerButton" data-tooltip="Automatically gains points every second">Auto-Clicker (Cost: 100 points)</button>
+        <button id="luckyClickButton" data-tooltip="Adds a 10% chance to double points on click">Lucky Clicks (Cost: 200 points)</button>
+        <button id="criticalClickButton" data-tooltip="Adds a chance for critical clicks (5x points)">Critical Clicks (Cost: 300 points)</button>
+    </div>
+    <div class="container">
+        <button id="pointButton">Click Me!</button>
+        <div class="counter">Points: <span id="points">0</span></div>
+    </div>
+
+    <div id="message" class="message" style="display: none;"></div>
+
+    <script>
+        let points = 0;
+        let pointsPerClick = 1;
+        let upgradeCost = 50;
+        let autoClickerCost = 100;
+        let luckyClickCost = 200;
+        let criticalClickCost = 300;
+        let autoClickerEnabled = false;
+        let luckyChance = 0;
+        let criticalChance = 0;
+
+        const pointButton = document.getElementById('pointButton');
+        const pointsDisplay = document.getElementById('points');
+        const upgradeButton = document.getElementById('upgradeButton');
+        const autoClickerButton = document.getElementById('autoClickerButton');
+        const luckyClickButton = document.getElementById('luckyClickButton');
+        const criticalClickButton = document.getElementById('criticalClickButton');
+        const messageBox = document.getElementById('message');
+
+        function updatePointsDisplay() {
+            pointsDisplay.textContent = points;
+        }
+
+        function showMessage(text) {
+            messageBox.textContent = text;
+            messageBox.style.display = 'block';
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 2000);
+        }
+
+        pointButton.addEventListener('click', () => {
+            let earnedPoints = pointsPerClick;
+            if (Math.random() < luckyChance) {
+                earnedPoints *= 2; // Lucky click doubles points
+                showMessage('Lucky Click!');
+            }
+            if (Math.random() < criticalChance) {
+                earnedPoints *= 5; // Critical click gives 5x points
+                showMessage('Critical Click!');
+            }
+            points += earnedPoints;
+            updatePointsDisplay();
+
+            // Create feedback animation
+            const feedback = document.createElement('div');
+            feedback.className = 'click-feedback';
+            feedback.textContent = `+${earnedPoints}`;
+            const rect = pointButton.getBoundingClientRect();
+            feedback.style.left = `${rect.width / 2 - 15}px`;
+            feedback.style.top = `10px`;
+            pointButton.appendChild(feedback);
+
+            setTimeout(() => feedback.remove(), 1000);
+        });
+
+        upgradeButton.addEventListener('click', () => {
+            if (points >= upgradeCost) {
+                points -= upgradeCost;
+                pointsPerClick += 1;
+                upgradeCost *= 2;
+                upgradeButton.textContent = `Upgrade Button (Cost: ${upgradeCost} points)`;
+                updatePointsDisplay();
+            } else {
+                showMessage('Not enough points for this upgrade!');
+            }
+        });
+
+        autoClickerButton.addEventListener('click', () => {
+            if (points >= autoClickerCost && !autoClickerEnabled) {
+                points -= autoClickerCost;
+                autoClickerCost *= 2;
+                autoClickerEnabled = true;
+                autoClickerButton.textContent = `Auto-Clicker (Cost: ${autoClickerCost} points)`;
+                updatePointsDisplay();
+                setInterval(() => {
+                    points += pointsPerClick;
+                    updatePointsDisplay();
+                }, 1000);
+            } else if (autoClickerEnabled) {
+                showMessage('Auto-Clicker already purchased!');
+            } else {
+                showMessage('Not enough points for this upgrade!');
+            }
+        });
+
+        luckyClickButton.addEventListener('click', () => {
+            if (points >= luckyClickCost) {
+                points -= luckyClickCost;
+                luckyChance += 0.1; // Each upgrade adds a 10% chance for lucky clicks
+                luckyClickCost *= 2;
+                luckyClickButton.textContent = `Lucky Clicks (Cost: ${luckyClickCost} points)`;
+                updatePointsDisplay();
+            } else {
+                showMessage('Not enough points for this upgrade!');
+            }
+        });
+
+        criticalClickButton.addEventListener('click', () => {
+            if (points >= criticalClickCost) {
+                points -= criticalClickCost;
+                criticalChance += 0.05; // Each upgrade increases critical chance by 5%
+                criticalClickCost *= 2;
+                criticalClickButton.textContent = `Critical Clicks (Cost: ${criticalClickCost} points)`;
+                updatePointsDisplay();
+            } else {
+                showMessage('Not enough points for this upgrade!');
+            }
+        });
+    </script>
 </body>
 </html>
