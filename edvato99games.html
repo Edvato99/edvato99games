@@ -7,27 +7,25 @@
     <style>
         body {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
+            background-color: #ffffff;
+            color: #333;
+            height: 100vh;
+            overflow-x: hidden;
+            position: relative;
         }
-        .container {
-            text-align: center;
-            flex-grow: 1;
-        }
-        .menu {
-            position: fixed;
-            left: 0;
-            top: 0;
+        .menu, .stats-menu {
             width: 200px;
-            height: 100%;
-            background-color: #333;
+            background-color: #222;
             color: white;
             padding: 20px;
             box-sizing: border-box;
+        }
+        .menu {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
         }
         .menu h3 {
             margin-top: 0;
@@ -43,28 +41,67 @@
             border-radius: 5px;
             font-size: 14px;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: 0.3s;
             position: relative;
+            filter: grayscale(1);
+            opacity: 0.6;
+        }
+        .menu button.affordable {
+            filter: none;
+            opacity: 1;
         }
         .menu button:hover {
             background-color: #0056b3;
         }
-        .menu button::after {
-            content: attr(data-tooltip);
+        .menu .counter {
             position: absolute;
-            left: 110%;
-            top: 50%;
-            transform: translateY(-50%);
+            top: -12px;
+            left: -15px;
+            background-color: blue;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .menu button.purchased .counter {
+            display: flex;
+        }
+        .stats-menu {
+            position: fixed;
+            top: 0;
+            right: -200px;
+            width: 200px;
+            height: 100%;
             background-color: #222;
             color: white;
-            padding: 5px;
-            border-radius: 3px;
-            font-size: 12px;
-            white-space: nowrap;
-            display: none;
+            transition: right 0.3s;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        .menu button:hover::after {
-            display: block;
+        .stats-menu.open {
+            right: 0;
+        }
+        .stats-menu h3 {
+            margin-top: 0;
+        }
+        .stats-menu .stat {
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .button-container {
+            text-align: center;
         }
         button {
             padding: 10px 20px;
@@ -80,21 +117,8 @@
         button:hover {
             background-color: #0056b3;
         }
-        button:active {
-            animation: clickEffect 0.2s;
-        }
-        @keyframes clickEffect {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.95); }
-            100% { transform: scale(1); }
-        }
-        .counter {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #333;
-        }
         .click-feedback {
-            position: absolute;
+            position: fixed;
             font-size: 24px;
             font-weight: bold;
             color: black;
@@ -106,151 +130,209 @@
             0% { opacity: 1; transform: translateY(0); }
             100% { opacity: 0; transform: translateY(-20px); }
         }
-        .message {
-            position: fixed;
-            top: 10%;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: red;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 16px;
-            opacity: 0;
-            animation: showMessage 2s forwards;
+        .counter {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
         }
-        @keyframes showMessage {
-            0% { opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { opacity: 0; }
+        #openStatsButton {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #28a745;
+            font-size: 12px;
+            padding: 10px 15px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: none;
+        }
+        #openStatsButton:hover {
+            background-color: #218838;
         }
     </style>
 </head>
 <body>
     <div class="menu">
         <h3>Upgrades</h3>
-        <button id="upgradeButton" data-tooltip="Increases points per click by 1">Upgrade Button (Cost: 50 points)</button>
-        <button id="autoClickerButton" data-tooltip="Automatically gains points every second">Auto-Clicker (Cost: 100 points)</button>
-        <button id="luckyClickButton" data-tooltip="Adds a 10% chance to double points on click">Lucky Clicks (Cost: 200 points)</button>
-        <button id="criticalClickButton" data-tooltip="Adds a chance for critical clicks (5x points)">Critical Clicks (Cost: 300 points)</button>
+        <button id="upgradeButton">
+            <span class="counter" id="upgradeCount">0</span>
+            Upgrade Button (Cost: 50 points)
+        </button>
+        <button id="autoClickerButton">
+            <span class="counter" id="autoClickerCount">0</span>
+            Auto-Clicker (Cost: 100 points)
+        </button>
+        <button id="criticalClickButton">
+            <span class="counter" id="criticalClickCount">0</span>
+            Critical Clicks (Cost: 300 points)
+        </button>
+        <button id="statisticsButton">
+            <span class="counter" id="statisticsCount">0</span>
+            Unlock Statistics (Cost: 400 points)
+        </button>
     </div>
-    <div class="container">
-        <button id="pointButton">Click Me!</button>
-        <div class="counter">Points: <span id="points">0</span></div>
+    <div class="main-container">
+        <div class="button-container">
+            <button id="pointButton">Click Me!</button>
+            <div class="counter">Points: <span id="points">0</span></div>
+        </div>
     </div>
 
-    <div id="message" class="message" style="display: none;"></div>
+    <!-- Statistics Menu on the Right -->
+    <div class="stats-menu" id="statsMenu">
+        <h3>Statistics</h3>
+        <div class="stat">Total Points: <span id="totalPoints">0</span></div>
+        <div class="stat">Upgrades Purchased: <span id="upgradesPurchased">0</span></div>
+        <div class="stat">Auto-Clickers Purchased: <span id="autoClickersPurchased">0</span></div>
+        <div class="stat">Critical Clicks Purchased: <span id="criticalClicksPurchased">0</span></div>
+        <div class="stat">Critical Clicks: <span id="criticalClickStats">0</span></div>
+        <button id="closeStatsButton">Close Statistics</button>
+    </div>
+
+    <button id="openStatsButton">Open Statistics</button>
 
     <script>
-        let points = 0;
-        let pointsPerClick = 1;
-        let upgradeCost = 50;
-        let autoClickerCost = 100;
-        let luckyClickCost = 200;
-        let criticalClickCost = 300;
-        let autoClickerEnabled = false;
-        let luckyChance = 0;
-        let criticalChance = 0;
+        let points = 0, pointsPerClick = 1, upgradeCost = 50, autoClickerCost = 100, criticalClickCost = 300, statisticsCost = 400;
+        let autoClickerCount = 0, criticalChance = 0, upgradesPurchased = 0, totalAutoClickerPoints = 0;
+        let criticalHits = 0;
+        let autoClickerInterval = null;
+        let autoClickerPointsPerSecond = 0;
 
-        const pointButton = document.getElementById('pointButton');
         const pointsDisplay = document.getElementById('points');
+        const totalPointsDisplay = document.getElementById('totalPoints');
+        const upgradesPurchasedDisplay = document.getElementById('upgradesPurchased');
+        const autoClickersPurchasedDisplay = document.getElementById('autoClickersPurchased');
+        const criticalClicksPurchasedDisplay = document.getElementById('criticalClicksPurchased');
+        const criticalClickStatsDisplay = document.getElementById('criticalClickStats');
+        const pointButton = document.getElementById('pointButton');
         const upgradeButton = document.getElementById('upgradeButton');
         const autoClickerButton = document.getElementById('autoClickerButton');
-        const luckyClickButton = document.getElementById('luckyClickButton');
         const criticalClickButton = document.getElementById('criticalClickButton');
-        const messageBox = document.getElementById('message');
+        const statisticsButton = document.getElementById('statisticsButton');
+        const statsMenu = document.getElementById('statsMenu');
+        const closeStatsButton = document.getElementById('closeStatsButton');
+        const openStatsButton = document.getElementById('openStatsButton');
 
-        function updatePointsDisplay() {
+        const upgradeCount = document.getElementById('upgradeCount');
+        const autoClickerCountDisplay = document.getElementById('autoClickerCount');
+        const criticalClickCount = document.getElementById('criticalClickCount');
+        const statisticsCount = document.getElementById('statisticsCount');
+
+        function updateDisplay() {
             pointsDisplay.textContent = points;
+            totalPointsDisplay.textContent = points;
+            upgradesPurchasedDisplay.textContent = upgradesPurchased;
+            autoClickersPurchasedDisplay.textContent = autoClickerCount;
+            criticalClicksPurchasedDisplay.textContent = criticalChance / 0.05;
+            criticalClickStatsDisplay.textContent = criticalHits;
+
+            upgradeButton.classList.toggle('affordable', points >= upgradeCost);
+            upgradeButton.textContent = `Upgrade Button (Cost: ${upgradeCost} points)`;
+            upgradeButton.insertAdjacentElement('afterbegin', upgradeCount);
+
+            autoClickerButton.classList.toggle('affordable', points >= autoClickerCost);
+            autoClickerButton.textContent = `Auto-Clicker (Cost: ${autoClickerCost} points)`;
+            autoClickerButton.insertAdjacentElement('afterbegin', autoClickerCountDisplay);
+
+            criticalClickButton.classList.toggle('affordable', points >= criticalClickCost);
+            criticalClickButton.textContent = `Critical Clicks (Cost: ${criticalClickCost} points)`;
+            criticalClickButton.insertAdjacentElement('afterbegin', criticalClickCount);
+
+            statisticsButton.classList.toggle('affordable', points >= statisticsCost);
+            if (points >= statisticsCost && !statisticsButton.classList.contains('purchased')) {
+                statisticsButton.style.display = 'block';
+            }
+
+            if (statisticsButton.classList.contains('purchased')) {
+                statisticsButton.style.display = 'none';
+            }
         }
 
-        function showMessage(text) {
-            messageBox.textContent = text;
-            messageBox.style.display = 'block';
-            setTimeout(() => {
-                messageBox.style.display = 'none';
-            }, 2000);
+        function addFeedback(button, text) {
+            const feedback = document.createElement('div');
+            feedback.className = 'click-feedback';
+            feedback.textContent = text;
+            const rect = button.getBoundingClientRect();
+            feedback.style.left = `${rect.left + rect.width / 2}px`;
+            feedback.style.top = `${rect.top - 30}px`;
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 1000);
         }
 
         pointButton.addEventListener('click', () => {
-            let earnedPoints = pointsPerClick;
-            if (Math.random() < luckyChance) {
-                earnedPoints *= 2; // Lucky click doubles points
-                showMessage('Lucky Click!');
-            }
+            let earned = pointsPerClick;
             if (Math.random() < criticalChance) {
-                earnedPoints *= 5; // Critical click gives 5x points
-                showMessage('Critical Click!');
+                earned *= 5;
+                criticalHits++; // Track critical hits
             }
-            points += earnedPoints;
-            updatePointsDisplay();
-
-            // Create feedback animation
-            const feedback = document.createElement('div');
-            feedback.className = 'click-feedback';
-            feedback.textContent = `+${earnedPoints}`;
-            const rect = pointButton.getBoundingClientRect();
-            feedback.style.left = `${rect.width / 2 - 15}px`;
-            feedback.style.top = `10px`;
-            pointButton.appendChild(feedback);
-
-            setTimeout(() => feedback.remove(), 1000);
+            points += earned;
+            addFeedback(pointButton, `+${earned}`);
+            updateDisplay();
         });
 
         upgradeButton.addEventListener('click', () => {
             if (points >= upgradeCost) {
                 points -= upgradeCost;
-                pointsPerClick += 1;
-                upgradeCost *= 2;
-                upgradeButton.textContent = `Upgrade Button (Cost: ${upgradeCost} points)`;
-                updatePointsDisplay();
-            } else {
-                showMessage('Not enough points for this upgrade!');
+                pointsPerClick++;
+                upgradesPurchased++;
+                upgradeCost = Math.floor(upgradeCost * 1.5);
+                upgradeCount.textContent = upgradesPurchased;
+                updateDisplay();
             }
         });
 
         autoClickerButton.addEventListener('click', () => {
-            if (points >= autoClickerCost && !autoClickerEnabled) {
+            if (points >= autoClickerCost) {
                 points -= autoClickerCost;
-                autoClickerCost *= 2;
-                autoClickerEnabled = true;
-                autoClickerButton.textContent = `Auto-Clicker (Cost: ${autoClickerCost} points)`;
-                updatePointsDisplay();
-                setInterval(() => {
-                    points += pointsPerClick;
-                    updatePointsDisplay();
-                }, 1000);
-            } else if (autoClickerEnabled) {
-                showMessage('Auto-Clicker already purchased!');
-            } else {
-                showMessage('Not enough points for this upgrade!');
-            }
-        });
+                autoClickerCount++;
+                autoClickerPointsPerSecond += 10 * autoClickerCount; // Increase points per auto-clicker with each purchase
+                autoClickerCost = Math.floor(autoClickerCost * 1.5);
 
-        luckyClickButton.addEventListener('click', () => {
-            if (points >= luckyClickCost) {
-                points -= luckyClickCost;
-                luckyChance += 0.1; // Each upgrade adds a 10% chance for lucky clicks
-                luckyClickCost *= 2;
-                luckyClickButton.textContent = `Lucky Clicks (Cost: ${luckyClickCost} points)`;
-                updatePointsDisplay();
-            } else {
-                showMessage('Not enough points for this upgrade!');
+                if (autoClickerCount === 1 && !autoClickerInterval) {
+                    autoClickerInterval = setInterval(() => {
+                        points += autoClickerPointsPerSecond;
+                        updateDisplay();
+                    }, 1000);
+                }
+
+                autoClickerCountDisplay.textContent = autoClickerCount;
+                updateDisplay();
             }
         });
 
         criticalClickButton.addEventListener('click', () => {
             if (points >= criticalClickCost) {
                 points -= criticalClickCost;
-                criticalChance += 0.05; // Each upgrade increases critical chance by 5%
-                criticalClickCost *= 2;
-                criticalClickButton.textContent = `Critical Clicks (Cost: ${criticalClickCost} points)`;
-                updatePointsDisplay();
-            } else {
-                showMessage('Not enough points for this upgrade!');
+                criticalChance += 0.05;
+                criticalClickCost = Math.floor(criticalClickCost * 1.5);
+                criticalClickCount.textContent = criticalChance / 0.05;
+                updateDisplay();
             }
         });
+
+        statisticsButton.addEventListener('click', () => {
+            if (points >= statisticsCost) {
+                points -= statisticsCost;
+                statisticsButton.classList.add('purchased');
+                statisticsButton.style.display = 'none';
+                openStatsButton.style.display = 'block';
+                updateDisplay();
+            }
+        });
+
+        closeStatsButton.addEventListener('click', () => {
+            statsMenu.classList.remove('open');
+            openStatsButton.style.display = 'block';
+        });
+
+        openStatsButton.addEventListener('click', () => {
+            statsMenu.classList.add('open');
+            openStatsButton.style.display = 'none';
+        });
+
+        updateDisplay();
     </script>
 </body>
 </html>
